@@ -1,32 +1,52 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ============================================
 // CONFIGURATION
 // ============================================
 const CONFIG = {
-  // Colors (extracted from video)
   colors: {
-    background: 0xF5F3E8,      // Cream/beige
-    gridLine: 0xD4D0C4,        // Light gray grid
-    nebulaCore: '#4A90D9',     // Light blue center
-    nebulaOuter: '#2B5797',    // Darker blue edges
-    nebulaHighlight: '#7BB3F0', // Bright blue highlights
-    particles: '#3B7DD8',       // Particle blue
-    orbitRings: '#B8B4A8',     // Gray orbit lines
+    background: 0xF5F3E8,
+    gridLine: 0xD4D0C4,
+    nebulaCore: '#4A90D9',
+    nebulaOuter: '#2B5797',
+    sphereBase: '#3B6B96',
+    sphereHighlight: '#5A8FBC',
+    gravityWell: '#6B7280',
+    orbitRing: '#9CA3AF',
+    iconStroke: '#4B5563',
   },
-  // Animation speeds
-  animation: {
-    nebulaRotation: 0.0003,
-    nebulaFlow: 0.15,
-    particleDrift: 0.0005,
-    particleFloat: 0.002,
-  },
-  // Counts
-  particles: {
-    count: 200,
-    innerCount: 80,  // Dense particles near center
+  phases: {
+    revA: { month: 6, name: 'Rev A' },
+    revB: { month: 24, name: 'Rev B' },
+    revC: { month: 48, name: 'Rev C' },
   }
 };
+
+// ============================================
+// ICON DEFINITIONS (SVG paths - Material Design Icons)
+// ============================================
+const ICONS = [
+  { id: 'linkedin', name: 'LinkedIn', orbit: 1, angle: 0 },
+  { id: 'twitter', name: 'Twitter/X', orbit: 1, angle: 72 },
+  { id: 'user', name: 'Audience', orbit: 1, angle: 144 },
+  { id: 'phone', name: 'Contact', orbit: 1, angle: 216 },
+  { id: 'star', name: 'Reviews', orbit: 1, angle: 288 },
+  { id: 'email', name: 'Email', orbit: 2, angle: 0 },
+  { id: 'chat', name: 'Chat', orbit: 2, angle: 60 },
+  { id: 'gear', name: 'Settings', orbit: 2, angle: 120 },
+  { id: 'megaphone', name: 'Announcements', orbit: 2, angle: 180 },
+  { id: 'target', name: 'Goals', orbit: 2, angle: 240 },
+  { id: 'podcast', name: 'Audio', orbit: 2, angle: 300 },
+  { id: 'handshake', name: 'Partnership', orbit: 3, angle: 0 },
+  { id: 'play', name: 'Media', orbit: 3, angle: 45 },
+  { id: 'document', name: 'Content', orbit: 3, angle: 90 },
+  { id: 'location', name: 'Location', orbit: 3, angle: 135 },
+  { id: 'link', name: 'Links', orbit: 3, angle: 180 },
+  { id: 'lightbulb', name: 'Ideas', orbit: 3, angle: 225 },
+  { id: 'camera', name: 'Visual', orbit: 3, angle: 270 },
+  { id: 'calendar', name: 'Events', orbit: 3, angle: 315 },
+];
 
 // ============================================
 // SCENE SETUP
@@ -35,148 +55,95 @@ const canvas = document.getElementById('webgl-canvas');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(CONFIG.colors.background);
 
-// Camera - orthographic for 2D-like feel
-const frustumSize = 10;
-const aspect = window.innerWidth / window.innerHeight;
-const camera = new THREE.OrthographicCamera(
-  frustumSize * aspect / -2,
-  frustumSize * aspect / 2,
-  frustumSize / 2,
-  frustumSize / -2,
-  0.1,
-  100
-);
-camera.position.z = 10;
+// Camera
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 6, 14);
+camera.lookAt(0, 0, 0);
 
 // Renderer
-const renderer = new THREE.WebGLRenderer({
-  canvas: canvas,
-  antialias: true,
-  alpha: false
-});
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+// Controls for sphere rotation
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.enablePan = false;
+controls.minDistance = 10;
+controls.maxDistance = 25;
+controls.maxPolarAngle = Math.PI / 1.6;
+controls.minPolarAngle = Math.PI / 6;
+
+// ============================================
+// RAYCASTING FOR INTERACTIONS
+// ============================================
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let hoveredIcon = null;
+
+// ============================================
+// STATE
+// ============================================
+let currentPhase = 0;
+let time = 0;
 
 // ============================================
 // GRID BACKGROUND
 // ============================================
-function createGridBackground() {
-  const gridSize = 20;
-  const divisions = 40;
-
+function createGrid() {
   const gridGroup = new THREE.Group();
-
-  // Main grid lines
-  const gridMaterial = new THREE.LineBasicMaterial({
-    color: CONFIG.colors.gridLine,
-    transparent: true,
-    opacity: 0.3
-  });
-
-  const gridGeometry = new THREE.BufferGeometry();
-  const gridPoints = [];
-
+  const gridSize = 40;
+  const divisions = 80;
+  const material = new THREE.LineBasicMaterial({ color: CONFIG.colors.gridLine, transparent: true, opacity: 0.2 });
+  const points = [];
   const step = gridSize / divisions;
-  const halfSize = gridSize / 2;
+  const half = gridSize / 2;
 
-  // Vertical lines
   for (let i = 0; i <= divisions; i++) {
-    const x = -halfSize + i * step;
-    gridPoints.push(x, -halfSize, 0);
-    gridPoints.push(x, halfSize, 0);
+    const pos = -half + i * step;
+    points.push(new THREE.Vector3(pos, 0, -half), new THREE.Vector3(pos, 0, half));
+    points.push(new THREE.Vector3(-half, 0, pos), new THREE.Vector3(half, 0, pos));
   }
 
-  // Horizontal lines
-  for (let i = 0; i <= divisions; i++) {
-    const y = -halfSize + i * step;
-    gridPoints.push(-halfSize, y, 0);
-    gridPoints.push(halfSize, y, 0);
-  }
-
-  gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(gridPoints, 3));
-  const grid = new THREE.LineSegments(gridGeometry, gridMaterial);
-  grid.position.z = -5;
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const grid = new THREE.LineSegments(geometry, material);
+  grid.rotation.x = -Math.PI / 2;
+  grid.position.y = -6;
   gridGroup.add(grid);
-
   return gridGroup;
 }
 
 // ============================================
-// ORBITAL RINGS
-// ============================================
-function createOrbitalRings() {
-  const ringsGroup = new THREE.Group();
-  const radii = [1.2, 2.0, 2.8, 3.6, 4.4];
-
-  radii.forEach((radius, index) => {
-    const curve = new THREE.EllipseCurve(
-      0, 0,
-      radius * 1.4, radius, // Slightly elliptical
-      0, 2 * Math.PI,
-      false,
-      0
-    );
-
-    const points = curve.getPoints(100);
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-    const material = new THREE.LineBasicMaterial({
-      color: CONFIG.colors.orbitRings,
-      transparent: true,
-      opacity: 0.25 - index * 0.03
-    });
-
-    const ellipse = new THREE.Line(geometry, material);
-    ellipse.rotation.x = Math.PI * 0.1; // Slight tilt
-    ellipse.position.z = -1;
-    ringsGroup.add(ellipse);
-  });
-
-  return ringsGroup;
-}
-
-// ============================================
-// NEBULA SHADER
+// NEBULA (PHASE 1)
 // ============================================
 const nebulaVertexShader = `
   varying vec2 vUv;
-  varying vec3 vPosition;
-
   void main() {
     vUv = uv;
-    vPosition = position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
 const nebulaFragmentShader = `
   uniform float uTime;
-  uniform vec3 uColorCore;
-  uniform vec3 uColorOuter;
-  uniform vec3 uColorHighlight;
-
+  uniform float uOpacity;
   varying vec2 vUv;
-  varying vec3 vPosition;
 
-  // Simplex noise functions
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
 
   float snoise(vec2 v) {
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-                        -0.577350269189626, 0.024390243902439);
-    vec2 i  = floor(v + dot(v, C.yy));
+    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+    vec2 i = floor(v + dot(v, C.yy));
     vec2 x0 = v - i + dot(i, C.xx);
-    vec2 i1;
-    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
     vec4 x12 = x0.xyxy + C.xxzz;
     x12.xy -= i1;
     i = mod289(i);
-    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0))
-                     + i.x + vec3(0.0, i1.x, 1.0));
-    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
-                            dot(x12.zw,x12.zw)), 0.0);
+    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
     m = m*m; m = m*m;
     vec3 x = 2.0 * fract(p * C.www) - 1.0;
     vec3 h = abs(x) - 0.5;
@@ -189,15 +156,13 @@ const nebulaFragmentShader = `
     return 130.0 * dot(m, g);
   }
 
-  // Fractal Brownian Motion
   float fbm(vec2 p) {
     float value = 0.0;
     float amplitude = 0.5;
-    float frequency = 1.0;
     for (int i = 0; i < 5; i++) {
-      value += amplitude * snoise(p * frequency);
+      value += amplitude * snoise(p);
+      p *= 2.0;
       amplitude *= 0.5;
-      frequency *= 2.0;
     }
     return value;
   }
@@ -205,299 +170,621 @@ const nebulaFragmentShader = `
   void main() {
     vec2 uv = vUv - 0.5;
     float dist = length(uv);
-
-    // Create swirling motion
     float angle = atan(uv.y, uv.x);
-    float swirl = angle + dist * 3.0 - uTime * 0.3;
+    float swirl = angle + dist * 4.0 - uTime * 0.4;
 
-    // Generate turbulent noise
-    vec2 noiseCoord = vec2(
-      cos(swirl) * dist * 2.0,
-      sin(swirl) * dist * 2.0
-    );
+    vec2 noiseCoord = vec2(cos(swirl) * dist * 2.5, sin(swirl) * dist * 2.5);
+    float noise = fbm(noiseCoord + uTime * 0.15);
+    noise = noise * 0.5 + 0.5;
 
-    float noise1 = fbm(noiseCoord + uTime * 0.1);
-    float noise2 = fbm(noiseCoord * 1.5 - uTime * 0.15);
-    float noise3 = fbm(noiseCoord * 0.5 + vec2(uTime * 0.05, -uTime * 0.08));
+    vec3 color1 = vec3(0.29, 0.56, 0.85);
+    vec3 color2 = vec3(0.17, 0.34, 0.59);
+    vec3 color3 = vec3(0.48, 0.70, 0.94);
 
-    // Combine noises for watercolor effect
-    float combinedNoise = (noise1 + noise2 * 0.7 + noise3 * 0.5) / 2.2;
-    combinedNoise = combinedNoise * 0.5 + 0.5;
+    vec3 color = mix(color1, color2, dist * 2.0);
+    color = mix(color, color3, noise * 0.5);
 
-    // Radial falloff for vortex shape
-    float vortexShape = 1.0 - smoothstep(0.0, 0.45, dist);
-    vortexShape *= combinedNoise;
-
-    // Edge turbulence
-    float edgeTurbulence = fbm(uv * 8.0 + uTime * 0.1) * 0.5 + 0.5;
-    float edgeMask = smoothstep(0.25, 0.4, dist) * (1.0 - smoothstep(0.4, 0.55, dist));
-
-    // Color mixing
-    vec3 color = mix(uColorCore, uColorOuter, dist * 2.0);
-    color = mix(color, uColorHighlight, combinedNoise * edgeTurbulence * 0.4);
-
-    // Alpha with soft edges and watercolor feel
-    float alpha = vortexShape * 0.85;
-    alpha += edgeMask * edgeTurbulence * 0.3;
-    alpha *= smoothstep(0.55, 0.35, dist); // Soft outer edge
-
-    // Add some variation for watercolor texture
-    alpha *= 0.7 + combinedNoise * 0.3;
-
-    gl_FragColor = vec4(color, alpha);
+    float alpha = (1.0 - smoothstep(0.0, 0.5, dist)) * noise * uOpacity;
+    gl_FragColor = vec4(color, alpha * 0.9);
   }
 `;
 
 function createNebula() {
-  const geometry = new THREE.PlaneGeometry(8, 8, 1, 1);
-
+  const geometry = new THREE.PlaneGeometry(12, 12);
   const material = new THREE.ShaderMaterial({
     vertexShader: nebulaVertexShader,
     fragmentShader: nebulaFragmentShader,
     uniforms: {
       uTime: { value: 0 },
-      uColorCore: { value: new THREE.Color(CONFIG.colors.nebulaHighlight) },
-      uColorOuter: { value: new THREE.Color(CONFIG.colors.nebulaOuter) },
-      uColorHighlight: { value: new THREE.Color(CONFIG.colors.nebulaCore) }
+      uOpacity: { value: 1 }
     },
     transparent: true,
     depthWrite: false,
-    blending: THREE.NormalBlending
+    side: THREE.DoubleSide
   });
-
-  const nebula = new THREE.Mesh(geometry, material);
-  nebula.position.z = 0;
-
-  return { mesh: nebula, material };
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.rotation.x = -Math.PI / 2.5;
+  mesh.position.y = 0.5;
+  return { mesh, material };
 }
 
 // ============================================
-// PARTICLE SYSTEM
+// SPHERE (PHASES 2 & 3)
 // ============================================
-function createParticles() {
-  const particleGroup = new THREE.Group();
+function createSphere() {
+  const geometry = new THREE.SphereGeometry(2, 64, 64);
 
-  // Create particle texture
+  // Create procedural texture
+  const texCanvas = document.createElement('canvas');
+  texCanvas.width = 512;
+  texCanvas.height = 512;
+  const ctx = texCanvas.getContext('2d');
+
+  // Base gradient
+  const gradient = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
+  gradient.addColorStop(0, '#5A8FBC');
+  gradient.addColorStop(0.5, '#3B6B96');
+  gradient.addColorStop(1, '#2B5797');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Add noise texture
+  for (let i = 0; i < 8000; i++) {
+    const x = Math.random() * 512;
+    const y = Math.random() * 512;
+    const alpha = Math.random() * 0.2;
+    ctx.fillStyle = Math.random() > 0.5 ? `rgba(255, 255, 255, ${alpha})` : `rgba(0, 50, 100, ${alpha})`;
+    ctx.fillRect(x, y, 2, 2);
+  }
+
+  // Add swirl patterns
+  ctx.strokeStyle = 'rgba(90, 143, 188, 0.25)';
+  ctx.lineWidth = 4;
+  for (let i = 0; i < 12; i++) {
+    ctx.beginPath();
+    const startX = Math.random() * 512;
+    const startY = Math.random() * 512;
+    ctx.moveTo(startX, startY);
+    for (let j = 0; j < 30; j++) {
+      const angle = j * 0.2 + Math.random() * 0.3;
+      const radius = j * 6;
+      ctx.lineTo(startX + Math.cos(angle) * radius, startY + Math.sin(angle) * radius);
+    }
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(texCanvas);
+
+  const material = new THREE.MeshStandardMaterial({
+    map: texture,
+    roughness: 0.7,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0
+  });
+
+  const sphere = new THREE.Mesh(geometry, material);
+  sphere.position.y = 0.5;
+  sphere.userData.type = 'sphere';
+
+  // Glow
+  const glowGeometry = new THREE.SphereGeometry(2.3, 32, 32);
+  const glowMaterial = new THREE.MeshBasicMaterial({
+    color: 0x5A8FBC,
+    transparent: true,
+    opacity: 0,
+    side: THREE.BackSide
+  });
+  const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+  sphere.add(glow);
+  sphere.userData.glow = glow;
+
+  return sphere;
+}
+
+// ============================================
+// GRAVITY WELL (PHASES 2 & 3)
+// ============================================
+function createGravityWell() {
+  const group = new THREE.Group();
+  const rings = 20;
+  const segments = 64;
+
+  // Horizontal rings
+  for (let i = 0; i < rings; i++) {
+    const t = i / (rings - 1);
+    const y = -t * 5;
+    const radius = 5.5 * (1 - t * 0.75);
+
+    const points = [];
+    for (let j = 0; j <= segments; j++) {
+      const angle = (j / segments) * Math.PI * 2;
+      points.push(new THREE.Vector3(
+        Math.cos(angle) * radius * 1.5,
+        y,
+        Math.sin(angle) * radius
+      ));
+    }
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({
+      color: CONFIG.colors.gravityWell,
+      transparent: true,
+      opacity: 0
+    });
+    const ring = new THREE.Line(geometry, material);
+    group.add(ring);
+  }
+
+  // Vertical lines
+  for (let i = 0; i < 32; i++) {
+    const angle = (i / 32) * Math.PI * 2;
+    const points = [];
+
+    for (let j = 0; j < rings; j++) {
+      const t = j / (rings - 1);
+      const y = -t * 5;
+      const radius = 5.5 * (1 - t * 0.75);
+      points.push(new THREE.Vector3(
+        Math.cos(angle) * radius * 1.5,
+        y,
+        Math.sin(angle) * radius
+      ));
+    }
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({
+      color: CONFIG.colors.gravityWell,
+      transparent: true,
+      opacity: 0
+    });
+    const line = new THREE.Line(geometry, material);
+    group.add(line);
+  }
+
+  group.position.y = -1.5;
+  return group;
+}
+
+// ============================================
+// ORBITAL RINGS WITH ARROWS
+// ============================================
+function createOrbitalRings() {
+  const group = new THREE.Group();
+  const radii = [3.5, 5.0, 6.5];
+
+  radii.forEach((radius, index) => {
+    const ringGroup = new THREE.Group();
+
+    // Dashed orbit line
+    const curve = new THREE.EllipseCurve(0, 0, radius * 1.4, radius, 0, Math.PI * 2, false, 0);
+    const points = curve.getPoints(120);
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineDashedMaterial({
+      color: CONFIG.colors.orbitRing,
+      transparent: true,
+      opacity: 0,
+      dashSize: 0.4,
+      gapSize: 0.2,
+    });
+
+    const ring = new THREE.Line(geometry, material);
+    ring.computeLineDistances();
+    ringGroup.add(ring);
+
+    // Direction arrows
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const arrowGroup = new THREE.Group();
+
+      // Arrow shape
+      const arrowShape = new THREE.Shape();
+      arrowShape.moveTo(0, 0);
+      arrowShape.lineTo(-0.3, 0.15);
+      arrowShape.lineTo(-0.2, 0);
+      arrowShape.lineTo(-0.3, -0.15);
+      arrowShape.lineTo(0, 0);
+
+      const arrowGeometry = new THREE.ShapeGeometry(arrowShape);
+      const arrowMaterial = new THREE.MeshBasicMaterial({
+        color: CONFIG.colors.orbitRing,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide
+      });
+
+      const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+      arrow.position.x = Math.cos(angle) * radius * 1.4;
+      arrow.position.y = Math.sin(angle) * radius;
+      arrow.rotation.z = angle - Math.PI / 2;
+
+      arrowGroup.add(arrow);
+      arrowGroup.userData.baseAngle = angle;
+      arrowGroup.userData.radius = radius;
+      arrowGroup.userData.radiusX = radius * 1.4;
+      ringGroup.add(arrowGroup);
+    }
+
+    ringGroup.rotation.x = -Math.PI / 2.3;
+    ringGroup.position.y = 0.3;
+    ringGroup.userData.orbitIndex = index;
+    group.add(ringGroup);
+  });
+
+  return group;
+}
+
+// ============================================
+// ICON SPRITES
+// ============================================
+function createIconSprite(iconData) {
   const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
+  canvas.width = 128;
+  canvas.height = 128;
   const ctx = canvas.getContext('2d');
 
-  // Draw soft circle
-  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gradient.addColorStop(0, 'rgba(59, 125, 216, 1)');
-  gradient.addColorStop(0.3, 'rgba(59, 125, 216, 0.8)');
-  gradient.addColorStop(1, 'rgba(59, 125, 216, 0)');
+  // White circle background
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(64, 64, 48, 0, Math.PI * 2);
+  ctx.fill();
 
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 64, 64);
+  // Border
+  ctx.strokeStyle = CONFIG.colors.iconStroke;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Draw icon based on type
+  ctx.fillStyle = CONFIG.colors.iconStroke;
+  ctx.font = 'bold 36px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const iconSymbols = {
+    linkedin: 'in',
+    twitter: '𝕏',
+    email: '✉',
+    chat: '💬',
+    gear: '⚙',
+    handshake: '🤝',
+    play: '▶',
+    document: '📄',
+    location: '📍',
+    user: '👤',
+    phone: '📞',
+    megaphone: '📢',
+    target: '🎯',
+    link: '🔗',
+    lightbulb: '💡',
+    star: '⭐',
+    camera: '📷',
+    podcast: '🎙',
+    calendar: '📅',
+  };
+
+  ctx.fillText(iconSymbols[iconData.id] || '●', 64, 64);
 
   const texture = new THREE.CanvasTexture(canvas);
-
-  // Outer scattered particles
-  const outerCount = CONFIG.particles.count;
-  const outerPositions = new Float32Array(outerCount * 3);
-  const outerSizes = new Float32Array(outerCount);
-  const outerVelocities = [];
-
-  for (let i = 0; i < outerCount; i++) {
-    // Distribute in elliptical pattern
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 1.5 + Math.random() * 3.5;
-
-    outerPositions[i * 3] = Math.cos(angle) * radius * 1.3;
-    outerPositions[i * 3 + 1] = Math.sin(angle) * radius;
-    outerPositions[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
-
-    outerSizes[i] = 0.03 + Math.random() * 0.06;
-
-    outerVelocities.push({
-      x: (Math.random() - 0.5) * 0.002,
-      y: (Math.random() - 0.5) * 0.002,
-      angle: angle,
-      radius: radius,
-      speed: 0.0001 + Math.random() * 0.0003,
-      floatOffset: Math.random() * Math.PI * 2
-    });
-  }
-
-  const outerGeometry = new THREE.BufferGeometry();
-  outerGeometry.setAttribute('position', new THREE.BufferAttribute(outerPositions, 3));
-  outerGeometry.setAttribute('size', new THREE.BufferAttribute(outerSizes, 1));
-
-  const outerMaterial = new THREE.PointsMaterial({
-    size: 0.08,
+  const material = new THREE.SpriteMaterial({
     map: texture,
     transparent: true,
-    opacity: 0.7,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    sizeAttenuation: true
+    opacity: 0
   });
 
-  const outerParticles = new THREE.Points(outerGeometry, outerMaterial);
-  outerParticles.userData.velocities = outerVelocities;
-  particleGroup.add(outerParticles);
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(0.8, 0.8, 1);
+  sprite.userData = {
+    ...iconData,
+    type: 'icon',
+    baseAngle: (iconData.angle * Math.PI) / 180,
+    orbitSpeed: 0.15 + Math.random() * 0.1,
+    currentAngle: (iconData.angle * Math.PI) / 180,
+    animating: false,
+    animationTime: 0,
+    originalScale: 0.8
+  };
 
-  // Inner dense particles (near nebula)
-  const innerCount = CONFIG.particles.innerCount;
-  const innerPositions = new Float32Array(innerCount * 3);
-  const innerVelocities = [];
+  return sprite;
+}
 
-  for (let i = 0; i < innerCount; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 0.3 + Math.random() * 1.2;
+function createAllIcons() {
+  const group = new THREE.Group();
+  const radii = [3.5, 5.0, 6.5];
 
-    innerPositions[i * 3] = Math.cos(angle) * radius;
-    innerPositions[i * 3 + 1] = Math.sin(angle) * radius;
-    innerPositions[i * 3 + 2] = (Math.random() - 0.5) * 0.3;
+  ICONS.forEach(iconData => {
+    const sprite = createIconSprite(iconData);
+    const orbitIndex = iconData.orbit - 1;
+    const radius = radii[orbitIndex];
 
-    innerVelocities.push({
-      angle: angle,
-      radius: radius,
-      speed: 0.0005 + Math.random() * 0.001,
-      floatOffset: Math.random() * Math.PI * 2
-    });
-  }
+    sprite.userData.radius = radius;
+    sprite.userData.radiusX = radius * 1.4;
 
-  const innerGeometry = new THREE.BufferGeometry();
-  innerGeometry.setAttribute('position', new THREE.BufferAttribute(innerPositions, 3));
+    const angle = sprite.userData.currentAngle;
+    const x = Math.cos(angle) * radius * 1.4;
+    const z = Math.sin(angle) * radius;
 
-  const innerMaterial = new THREE.PointsMaterial({
-    size: 0.05,
-    map: texture,
-    transparent: true,
-    opacity: 0.9,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    sizeAttenuation: true
+    sprite.position.set(x, 0.5, z);
+    group.add(sprite);
   });
 
-  const innerParticles = new THREE.Points(innerGeometry, innerMaterial);
-  innerParticles.userData.velocities = innerVelocities;
-  particleGroup.add(innerParticles);
+  group.rotation.x = -Math.PI / 2.3 + Math.PI / 2;
+  group.position.y = 0.3;
+  return group;
+}
 
-  return particleGroup;
+// ============================================
+// LIGHTING
+// ============================================
+function setupLighting() {
+  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(ambient);
+
+  const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+  directional.position.set(5, 10, 7);
+  scene.add(directional);
+
+  const backLight = new THREE.DirectionalLight(0x5A8FBC, 0.4);
+  backLight.position.set(-5, -5, -5);
+  scene.add(backLight);
 }
 
 // ============================================
 // INITIALIZE SCENE
 // ============================================
-const grid = createGridBackground();
+const grid = createGrid();
 scene.add(grid);
-
-const orbitalRings = createOrbitalRings();
-scene.add(orbitalRings);
 
 const { mesh: nebula, material: nebulaMaterial } = createNebula();
 scene.add(nebula);
 
-const particles = createParticles();
-scene.add(particles);
+const sphere = createSphere();
+scene.add(sphere);
+
+const gravityWell = createGravityWell();
+scene.add(gravityWell);
+
+const orbitalRings = createOrbitalRings();
+scene.add(orbitalRings);
+
+const icons = createAllIcons();
+scene.add(icons);
+
+setupLighting();
 
 // ============================================
-// ANIMATION
+// PHASE TRANSITIONS
 // ============================================
-let time = 0;
-let animationId;
-let isVisible = true;
+function updatePhase(phase) {
+  // Nebula fades out
+  const nebulaOpacity = Math.max(0, 1 - phase * 1.5);
+  nebulaMaterial.uniforms.uOpacity.value = nebulaOpacity;
+  nebula.visible = nebulaOpacity > 0.01;
 
-function animateParticles() {
-  particles.children.forEach((particleSystem, systemIndex) => {
-    const positions = particleSystem.geometry.attributes.position.array;
-    const velocities = particleSystem.userData.velocities;
+  // Sphere fades in
+  const sphereOpacity = Math.min(1, Math.max(0, (phase - 0.3) * 2));
+  sphere.material.opacity = sphereOpacity;
+  sphere.userData.glow.material.opacity = sphereOpacity * 0.2;
+  sphere.visible = sphereOpacity > 0.01;
 
-    for (let i = 0; i < velocities.length; i++) {
-      const vel = velocities[i];
+  // Gravity well
+  const wellOpacity = Math.min(0.5, Math.max(0, (phase - 0.5) * 1.5));
+  gravityWell.children.forEach(child => {
+    child.material.opacity = wellOpacity;
+  });
+  gravityWell.visible = wellOpacity > 0.01;
 
-      // Orbital motion
-      vel.angle += vel.speed;
+  // Orbital rings
+  const ringOpacity = Math.min(0.7, Math.max(0, (phase - 0.6) * 2));
+  orbitalRings.children.forEach(ringGroup => {
+    ringGroup.children.forEach(child => {
+      if (child.material) child.material.opacity = ringOpacity;
+      child.children?.forEach(arrow => {
+        if (arrow.material) arrow.material.opacity = ringOpacity;
+      });
+    });
+  });
 
-      // Calculate new position with gentle floating
-      const floatY = Math.sin(time * 2 + vel.floatOffset) * 0.02;
-      const floatX = Math.cos(time * 1.5 + vel.floatOffset) * 0.01;
+  // Icons stagger in
+  icons.children.forEach((icon, index) => {
+    const delay = 0.7 + (index / icons.children.length) * 0.3;
+    const iconOpacity = Math.min(1, Math.max(0, (phase - delay) * 4));
+    icon.material.opacity = iconOpacity;
+  });
 
-      positions[i * 3] = Math.cos(vel.angle) * vel.radius * (systemIndex === 0 ? 1.3 : 1) + floatX;
-      positions[i * 3 + 1] = Math.sin(vel.angle) * vel.radius + floatY;
+  updateLabels(phase);
+}
+
+function updateLabels(phase) {
+  const label = document.getElementById('phase-label');
+  const monthDisplay = document.getElementById('month-display');
+  if (!label || !monthDisplay) return;
+
+  let phaseName, month;
+  if (phase < 0.33) {
+    phaseName = 'Rev A';
+    month = Math.round(6 + phase * 54);
+  } else if (phase < 0.66) {
+    phaseName = 'Rev B';
+    month = Math.round(6 + phase * 54);
+  } else {
+    phaseName = 'Rev C';
+    month = Math.round(6 + phase * 54);
+  }
+  month = Math.min(48, Math.max(6, month));
+
+  label.textContent = `BRAND GRAVITY ECOSYSTEM | ${phaseName}`;
+  monthDisplay.textContent = `MONTH: ${month}`;
+}
+
+// ============================================
+// ICON CLICK ANIMATION
+// ============================================
+function animateIcon(icon) {
+  if (icon.userData.animating) return;
+  icon.userData.animating = true;
+  icon.userData.animationTime = 0;
+}
+
+function updateIconAnimations(delta) {
+  icons.children.forEach(icon => {
+    if (icon.userData.animating) {
+      icon.userData.animationTime += delta;
+      const t = icon.userData.animationTime;
+
+      // Pulse + spin
+      const pulseScale = icon.userData.originalScale * (1 + Math.sin(t * 12) * 0.4 * Math.exp(-t * 2.5));
+      icon.scale.set(pulseScale, pulseScale, 1);
+
+      if (t > 1.2) {
+        icon.userData.animating = false;
+        icon.scale.set(icon.userData.originalScale, icon.userData.originalScale, 1);
+      }
     }
-
-    particleSystem.geometry.attributes.position.needsUpdate = true;
   });
 }
 
-function animate() {
-  if (!isVisible) {
-    animationId = requestAnimationFrame(animate);
-    return;
-  }
+// ============================================
+// ORBIT ANIMATION
+// ============================================
+function updateOrbits(delta) {
+  if (currentPhase < 0.7) return;
 
-  time += 0.016; // Approximately 60fps timing
+  const orbitFactor = Math.min(1, (currentPhase - 0.7) * 3.33);
 
-  // Update nebula shader
-  nebulaMaterial.uniforms.uTime.value = time * CONFIG.animation.nebulaFlow;
+  icons.children.forEach(icon => {
+    icon.userData.currentAngle += icon.userData.orbitSpeed * delta * orbitFactor;
 
-  // Slowly rotate nebula
-  nebula.rotation.z += CONFIG.animation.nebulaRotation;
+    const angle = icon.userData.currentAngle;
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
 
-  // Animate particles
-  animateParticles();
-
-  // Subtle orbital ring rotation
-  orbitalRings.rotation.z += 0.0001;
-
-  renderer.render(scene, camera);
-  animationId = requestAnimationFrame(animate);
+    // Transform for tilted orbit
+    icon.position.x = cosA * icon.userData.radiusX;
+    const yBase = sinA * icon.userData.radius;
+    icon.position.z = yBase * Math.cos(-Math.PI / 2.3 + Math.PI / 2);
+    icon.position.y = 0.3 + yBase * Math.sin(-Math.PI / 2.3 + Math.PI / 2) + 0.5;
+  });
 }
 
 // ============================================
 // EVENT HANDLERS
 // ============================================
-function onWindowResize() {
-  const aspect = window.innerWidth / window.innerHeight;
+function onMouseMove(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-  camera.left = frustumSize * aspect / -2;
-  camera.right = frustumSize * aspect / 2;
-  camera.top = frustumSize / 2;
-  camera.bottom = frustumSize / -2;
-  camera.updateProjectionMatrix();
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(icons.children);
 
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-window.addEventListener('resize', onWindowResize);
-
-// Pause when tab is hidden
-document.addEventListener('visibilitychange', () => {
-  isVisible = !document.hidden;
-});
-
-// ============================================
-// WEBGL SUPPORT CHECK
-// ============================================
-function checkWebGLSupport() {
-  try {
-    const testCanvas = document.createElement('canvas');
-    const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
-    return !!gl;
-  } catch (e) {
-    return false;
+  if (intersects.length > 0) {
+    const icon = intersects[0].object;
+    if (hoveredIcon !== icon) {
+      if (hoveredIcon && !hoveredIcon.userData.animating) {
+        hoveredIcon.scale.set(hoveredIcon.userData.originalScale, hoveredIcon.userData.originalScale, 1);
+      }
+      hoveredIcon = icon;
+      if (!icon.userData.animating) {
+        icon.scale.set(icon.userData.originalScale * 1.3, icon.userData.originalScale * 1.3, 1);
+      }
+      canvas.style.cursor = 'pointer';
+      showTooltip(event.clientX, event.clientY, icon.userData.name);
+    }
+  } else {
+    if (hoveredIcon && !hoveredIcon.userData.animating) {
+      hoveredIcon.scale.set(hoveredIcon.userData.originalScale, hoveredIcon.userData.originalScale, 1);
+    }
+    hoveredIcon = null;
+    canvas.style.cursor = 'grab';
+    hideTooltip();
   }
 }
 
-if (!checkWebGLSupport()) {
-  canvas.style.display = 'none';
-  const fallback = document.getElementById('video-fallback');
-  if (fallback) fallback.style.display = 'block';
-} else {
-  animate();
+function onClick() {
+  if (hoveredIcon) {
+    animateIcon(hoveredIcon);
+  }
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function showTooltip(x, y, text) {
+  let tooltip = document.getElementById('icon-tooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'icon-tooltip';
+    document.body.appendChild(tooltip);
+  }
+  tooltip.textContent = text;
+  tooltip.style.left = (x + 15) + 'px';
+  tooltip.style.top = (y - 10) + 'px';
+  tooltip.style.display = 'block';
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById('icon-tooltip');
+  if (tooltip) tooltip.style.display = 'none';
+}
+
+function setupTimeline() {
+  const slider = document.getElementById('timeline-slider');
+  if (slider) {
+    slider.addEventListener('input', (e) => {
+      currentPhase = parseFloat(e.target.value);
+      updatePhase(currentPhase);
+    });
+  }
 }
 
 // ============================================
-// CLEANUP (for HMR in dev)
+// ANIMATION LOOP
 // ============================================
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    cancelAnimationFrame(animationId);
-    renderer.dispose();
-  });
+let lastTime = 0;
+let isVisible = true;
+
+function animate(currentTime) {
+  requestAnimationFrame(animate);
+  if (!isVisible) return;
+
+  const delta = Math.min((currentTime - lastTime) / 1000, 0.1);
+  lastTime = currentTime;
+  time += delta;
+
+  // Nebula animation
+  nebulaMaterial.uniforms.uTime.value = time;
+
+  // Sphere rotation
+  if (sphere.visible) {
+    sphere.rotation.y += delta * 0.15;
+  }
+
+  // Orbit icons
+  updateOrbits(delta);
+
+  // Icon animations
+  updateIconAnimations(delta);
+
+  controls.update();
+  renderer.render(scene, camera);
 }
+
+// ============================================
+// INIT
+// ============================================
+window.addEventListener('resize', onResize);
+window.addEventListener('mousemove', onMouseMove);
+window.addEventListener('click', onClick);
+document.addEventListener('visibilitychange', () => { isVisible = !document.hidden; });
+
+setupTimeline();
+updatePhase(0);
+animate(0);
+
+// Export for potential external control
+window.brandGravity = {
+  setPhase: (p) => { currentPhase = p; updatePhase(p); },
+  getPhase: () => currentPhase
+};
