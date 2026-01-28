@@ -14,36 +14,56 @@ const CONFIG = {
     sphereHighlight: '#60A5FA',
     gravityWell: '#3B82F6',
     orbitRing: '#60A5FA',
+  },
+  categories: {
+    search: { primary: '#3B82F6', secondary: '#1D4ED8', glow: '#60A5FA' },      // Blue
+    community: { primary: '#8B5CF6', secondary: '#6D28D9', glow: '#A78BFA' },   // Purple
+    developer: { primary: '#10B981', secondary: '#047857', glow: '#34D399' },   // Green
+    marketplace: { primary: '#F97316', secondary: '#C2410C', glow: '#FB923C' }, // Orange
+    integration: { primary: '#EAB308', secondary: '#A16207', glow: '#FDE047' }, // Yellow
+    comparison: { primary: '#14B8A6', secondary: '#0F766E', glow: '#2DD4BF' },  // Teal
   }
 };
 
 // ============================================
-// ICON DEFINITIONS - All 20 icons
+// FONT AWESOME ICON DEFINITIONS - 20 icons
 // ============================================
 const ALL_ICONS = [
-  { id: 'linkedin', name: 'LinkedIn', symbol: 'in', color1: '#0077B5', color2: '#004182' },
-  { id: 'twitter', name: 'Twitter/X', symbol: '𝕏', color1: '#1DA1F2', color2: '#0d8ecf' },
-  { id: 'email', name: 'Email', symbol: '✉', color1: '#EA4335', color2: '#c5221f' },
-  { id: 'chat', name: 'Chat', symbol: '💬', color1: '#25D366', color2: '#128C7E' },
-  { id: 'gear', name: 'Settings', symbol: '⚙', color1: '#6B7280', color2: '#374151' },
-  { id: 'handshake', name: 'Partnership', symbol: '🤝', color1: '#F59E0B', color2: '#D97706' },
-  { id: 'play', name: 'Media', symbol: '▶', color1: '#EF4444', color2: '#B91C1C' },
-  { id: 'document', name: 'Content', symbol: '📄', color1: '#3B82F6', color2: '#1D4ED8' },
-  { id: 'location', name: 'Location', symbol: '📍', color1: '#EF4444', color2: '#991B1B' },
-  { id: 'user', name: 'Audience', symbol: '👤', color1: '#8B5CF6', color2: '#6D28D9' },
-  { id: 'phone', name: 'Contact', symbol: '📞', color1: '#10B981', color2: '#047857' },
-  { id: 'megaphone', name: 'Announcements', symbol: '📢', color1: '#F97316', color2: '#C2410C' },
-  { id: 'target', name: 'Goals', symbol: '🎯', color1: '#EC4899', color2: '#BE185D' },
-  { id: 'link', name: 'Links', symbol: '🔗', color1: '#6366F1', color2: '#4338CA' },
-  { id: 'lightbulb', name: 'Ideas', symbol: '💡', color1: '#FBBF24', color2: '#D97706' },
-  { id: 'star', name: 'Reviews', symbol: '⭐', color1: '#FCD34D', color2: '#F59E0B' },
-  { id: 'camera', name: 'Visual', symbol: '📷', color1: '#14B8A6', color2: '#0F766E' },
-  { id: 'podcast', name: 'Audio', symbol: '🎙', color1: '#A855F7', color2: '#7C3AED' },
-  { id: 'calendar', name: 'Events', symbol: '📅', color1: '#06B6D4', color2: '#0891B2' },
-  { id: 'analytics', name: 'Analytics', symbol: '📊', color1: '#22C55E', color2: '#15803D' },
+  // SEARCH (3 icons) - Blue
+  { id: 'google', name: 'Google', unicode: '\uf1a0', fontFamily: 'Font Awesome 6 Brands', category: 'search' },
+  { id: 'microsoft', name: 'Bing', unicode: '\uf3ca', fontFamily: 'Font Awesome 6 Brands', category: 'search' },
+  { id: 'robot', name: 'AI/LLMs', unicode: '\uf544', fontFamily: 'Font Awesome 6 Free', category: 'search' },
+
+  // COMMUNITY (6 icons) - Purple
+  { id: 'reddit', name: 'Reddit', unicode: '\uf1a1', fontFamily: 'Font Awesome 6 Brands', category: 'community' },
+  { id: 'linkedin', name: 'LinkedIn', unicode: '\uf08c', fontFamily: 'Font Awesome 6 Brands', category: 'community' },
+  { id: 'stackoverflow', name: 'Stack Overflow', unicode: '\uf16c', fontFamily: 'Font Awesome 6 Brands', category: 'community' },
+  { id: 'discord', name: 'Discord', unicode: '\uf392', fontFamily: 'Font Awesome 6 Brands', category: 'community' },
+  { id: 'slack', name: 'Slack', unicode: '\uf198', fontFamily: 'Font Awesome 6 Brands', category: 'community' },
+  { id: 'xtwitter', name: 'X/Twitter', unicode: '\ue61b', fontFamily: 'Font Awesome 6 Brands', category: 'community' },
+
+  // DEVELOPER (3 icons) - Green
+  { id: 'github', name: 'GitHub', unicode: '\uf09b', fontFamily: 'Font Awesome 6 Brands', category: 'developer' },
+  { id: 'code', name: 'Dev Portals', unicode: '\uf121', fontFamily: 'Font Awesome 6 Free', category: 'developer' },
+  { id: 'server', name: 'MCP/Servers', unicode: '\uf233', fontFamily: 'Font Awesome 6 Free', category: 'developer' },
+
+  // MARKETPLACE (4 icons) - Orange
+  { id: 'aws', name: 'AWS', unicode: '\uf375', fontFamily: 'Font Awesome 6 Brands', category: 'marketplace' },
+  { id: 'salesforce', name: 'Salesforce', unicode: '\uf83b', fontFamily: 'Font Awesome 6 Brands', category: 'marketplace' },
+  { id: 'hubspot', name: 'HubSpot', unicode: '\uf3b2', fontFamily: 'Font Awesome 6 Brands', category: 'marketplace' },
+  { id: 'cloud', name: 'Cloud Marketplaces', unicode: '\uf0c2', fontFamily: 'Font Awesome 6 Free', category: 'marketplace' },
+
+  // INTEGRATION (2 icons) - Yellow
+  { id: 'plug', name: 'Native Integrations', unicode: '\uf1e6', fontFamily: 'Font Awesome 6 Free', category: 'integration' },
+  { id: 'bolt', name: 'Automation', unicode: '\uf0e7', fontFamily: 'Font Awesome 6 Free', category: 'integration' },
+
+  // COMPARISON (2 icons) - Teal
+  { id: 'wikipedia', name: 'Wikipedia', unicode: '\uf266', fontFamily: 'Font Awesome 6 Brands', category: 'comparison' },
+  { id: 'chartbar', name: 'Reviews/Analysts', unicode: '\uf080', fontFamily: 'Font Awesome 6 Free', category: 'comparison' },
 ];
 
-// Rev B gets first 6, Rev C gets all 20
+// Rev B shows 6 icons (one per category)
+const REV_B_ICONS = [0, 4, 9, 12, 16, 18]; // google, linkedin, github, aws, plug, wikipedia
 const REV_B_ICON_COUNT = 6;
 const REV_C_ICON_COUNT = 20;
 
@@ -82,6 +102,33 @@ let hoveredIcon = null;
 // State
 let currentPhase = 0;
 let time = 0;
+let fontsLoaded = false;
+
+// ============================================
+// FONT LOADING
+// ============================================
+async function loadFonts() {
+  try {
+    // Wait for Font Awesome fonts to load
+    await document.fonts.ready;
+
+    // Check if FA fonts are available
+    const testBrands = document.fonts.check('900 48px "Font Awesome 6 Brands"');
+    const testSolid = document.fonts.check('900 48px "Font Awesome 6 Free"');
+
+    if (testBrands || testSolid) {
+      fontsLoaded = true;
+      console.log('Font Awesome fonts loaded');
+      recreateIconTextures();
+    } else {
+      // Retry after a short delay
+      setTimeout(loadFonts, 500);
+    }
+  } catch (e) {
+    console.log('Font loading check:', e);
+    setTimeout(loadFonts, 500);
+  }
+}
 
 // ============================================
 // GRID BACKGROUND (subtle on black)
@@ -378,78 +425,121 @@ function createSphereOrbit() {
 }
 
 // ============================================
-// 3D ICON WITH GRADIENT
+// CREATE FONT AWESOME ICON TEXTURE
 // ============================================
-function create3DIcon(iconData, orbitRadius, angle) {
-  const group = new THREE.Group();
+function createFAIconTexture(iconData, size = 256) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
 
-  // Main sphere body with gradient
-  const geometry = new THREE.SphereGeometry(0.4, 32, 32);
+  const category = CONFIG.categories[iconData.category];
 
-  // Create gradient texture
-  const texCanvas = document.createElement('canvas');
-  texCanvas.width = 128;
-  texCanvas.height = 128;
-  const ctx = texCanvas.getContext('2d');
+  // Clear with transparency
+  ctx.clearRect(0, 0, size, size);
 
-  const gradient = ctx.createRadialGradient(64, 40, 0, 64, 64, 70);
-  gradient.addColorStop(0, iconData.color1);
-  gradient.addColorStop(0.6, iconData.color2);
-  gradient.addColorStop(1, '#000000');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 128, 128);
+  // Draw circular background with gradient
+  const bgGradient = ctx.createRadialGradient(size/2, size/2 - 20, 0, size/2, size/2, size/2);
+  bgGradient.addColorStop(0, category.glow);
+  bgGradient.addColorStop(0.5, category.primary);
+  bgGradient.addColorStop(1, category.secondary);
+
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size/2 - 10, 0, Math.PI * 2);
+  ctx.fillStyle = bgGradient;
+  ctx.fill();
 
   // Add highlight
-  const highlight = ctx.createRadialGradient(45, 35, 0, 64, 64, 60);
+  const highlight = ctx.createRadialGradient(size/2 - 30, size/2 - 40, 0, size/2, size/2, size/2);
   highlight.addColorStop(0, 'rgba(255,255,255,0.4)');
-  highlight.addColorStop(0.3, 'rgba(255,255,255,0.1)');
+  highlight.addColorStop(0.3, 'rgba(255,255,255,0.15)');
   highlight.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size/2 - 10, 0, Math.PI * 2);
   ctx.fillStyle = highlight;
-  ctx.fillRect(0, 0, 128, 128);
+  ctx.fill();
 
-  const texture = new THREE.CanvasTexture(texCanvas);
+  // Draw Font Awesome icon
+  if (fontsLoaded) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `900 ${size * 0.45}px "${iconData.fontFamily}"`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
-  const material = new THREE.MeshStandardMaterial({
+    // Add shadow for depth
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 4;
+
+    ctx.fillText(iconData.unicode, size/2, size/2 + 5);
+
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  } else {
+    // Fallback: draw a placeholder circle
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size * 0.2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Add outer glow ring
+  ctx.strokeStyle = category.glow;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size/2 - 5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+// ============================================
+// 3D ICON WITH FONT AWESOME
+// ============================================
+function createFAIcon(iconData, orbitRadius, angle) {
+  const group = new THREE.Group();
+  const category = CONFIG.categories[iconData.category];
+
+  // Create sprite with FA icon texture
+  const texture = createFAIconTexture(iconData);
+  const spriteMaterial = new THREE.SpriteMaterial({
     map: texture,
-    roughness: 0.3,
-    metalness: 0.5,
     transparent: true,
     opacity: 0,
-    emissive: new THREE.Color(iconData.color2),
-    emissiveIntensity: 0.3
+    depthTest: true,
+    depthWrite: false
   });
 
-  const sphere = new THREE.Mesh(geometry, material);
-  group.add(sphere);
+  const sprite = new THREE.Sprite(spriteMaterial);
+  sprite.scale.set(1.2, 1.2, 1);
+  group.add(sprite);
 
-  // Icon label (as sprite for always-facing camera)
-  const labelCanvas = document.createElement('canvas');
-  labelCanvas.width = 64;
-  labelCanvas.height = 64;
-  const labelCtx = labelCanvas.getContext('2d');
-  labelCtx.fillStyle = '#ffffff';
-  labelCtx.font = 'bold 32px Arial';
-  labelCtx.textAlign = 'center';
-  labelCtx.textBaseline = 'middle';
-  labelCtx.fillText(iconData.symbol, 32, 32);
-
-  const labelTexture = new THREE.CanvasTexture(labelCanvas);
-  const labelMaterial = new THREE.SpriteMaterial({
-    map: labelTexture,
+  // Add 3D backing sphere for depth
+  const sphereGeom = new THREE.SphereGeometry(0.5, 32, 32);
+  const sphereMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(category.primary),
     transparent: true,
-    opacity: 0
+    opacity: 0,
+    emissive: new THREE.Color(category.secondary),
+    emissiveIntensity: 0.3,
+    roughness: 0.4,
+    metalness: 0.6
   });
-  const label = new THREE.Sprite(labelMaterial);
-  label.scale.set(0.5, 0.5, 1);
-  label.position.y = 0;
-  group.add(label);
+  const backingSphere = new THREE.Mesh(sphereGeom, sphereMat);
+  backingSphere.position.z = -0.1;
+  group.add(backingSphere);
 
   // Glow ring
-  const glowCurve = new THREE.EllipseCurve(0, 0, 0.5, 0.5, 0, Math.PI * 2, false, 0);
+  const glowCurve = new THREE.EllipseCurve(0, 0, 0.7, 0.7, 0, Math.PI * 2, false, 0);
   const glowPoints = glowCurve.getPoints(32);
   const glowGeom = new THREE.BufferGeometry().setFromPoints(glowPoints);
   const glowMat = new THREE.LineBasicMaterial({
-    color: new THREE.Color(iconData.color1),
+    color: new THREE.Color(category.glow),
     transparent: true,
     opacity: 0
   });
@@ -467,9 +557,10 @@ function create3DIcon(iconData, orbitRadius, angle) {
     animating: false,
     animationTime: 0,
     originalScale: 1,
-    sphereMaterial: material,
-    labelMaterial: labelMaterial,
-    glowMaterial: glowMat
+    spriteMaterial: spriteMaterial,
+    sphereMaterial: sphereMat,
+    glowMaterial: glowMat,
+    texture: texture
   };
 
   return group;
@@ -537,9 +628,10 @@ function createAllIcons() {
     const angleOffset = (index % 7) / 7 * Math.PI * 2;
     const radius = radii[orbitIndex];
 
-    const icon = create3DIcon(iconData, radius, angleOffset);
+    const icon = createFAIcon(iconData, radius, angleOffset);
     icon.userData.iconIndex = index;
     icon.userData.orbitIndex = orbitIndex;
+    icon.userData.isRevBIcon = REV_B_ICONS.includes(index);
 
     // Position on tilted orbit
     const x = Math.cos(angleOffset) * radius * 1.3;
@@ -552,6 +644,20 @@ function createAllIcons() {
   group.rotation.x = -Math.PI / 2.2 + Math.PI / 2;
   group.position.y = 0;
   return group;
+}
+
+// ============================================
+// RECREATE ICON TEXTURES (after fonts load)
+// ============================================
+function recreateIconTextures() {
+  icons.children.forEach((icon, index) => {
+    const iconData = ALL_ICONS[index];
+    const newTexture = createFAIconTexture(iconData);
+    icon.userData.spriteMaterial.map = newTexture;
+    icon.userData.spriteMaterial.needsUpdate = true;
+    icon.userData.texture.dispose();
+    icon.userData.texture = newTexture;
+  });
 }
 
 // ============================================
@@ -603,6 +709,9 @@ const icons = createAllIcons();
 scene.add(icons);
 
 setupLighting();
+
+// Start loading fonts
+loadFonts();
 
 // ============================================
 // PHASE TRANSITIONS
@@ -656,41 +765,39 @@ function updatePhase(phase) {
     });
   });
 
-  // ICONS: Rev B shows 6, Rev C shows 20
+  // ICONS: Rev B shows 6 specific icons, Rev C shows all 20
   const iconStart = 0.4;
   icons.children.forEach((icon, index) => {
-    // Determine if this icon should be visible based on phase
     let shouldShow = false;
     let iconOpacity = 0;
 
     if (phase >= iconStart) {
       if (phase < 0.66) {
-        // Rev B: Show first 6 icons
-        shouldShow = index < REV_B_ICON_COUNT;
+        // Rev B: Show only the 6 designated Rev B icons
+        shouldShow = icon.userData.isRevBIcon;
         if (shouldShow) {
-          const delay = iconStart + (index / REV_B_ICON_COUNT) * 0.15;
+          const revBIndex = REV_B_ICONS.indexOf(index);
+          const delay = iconStart + (revBIndex / REV_B_ICON_COUNT) * 0.15;
           iconOpacity = Math.min(1, Math.max(0, (phase - delay) * 5));
         }
       } else {
         // Rev C: Show all 20 icons
-        shouldShow = index < REV_C_ICON_COUNT;
-        if (shouldShow) {
-          if (index < REV_B_ICON_COUNT) {
-            iconOpacity = 1; // Already visible from Rev B
-          } else {
-            // Stagger new icons
-            const newIndex = index - REV_B_ICON_COUNT;
-            const totalNew = REV_C_ICON_COUNT - REV_B_ICON_COUNT;
-            const delay = 0.66 + (newIndex / totalNew) * 0.25;
-            iconOpacity = Math.min(1, Math.max(0, (phase - delay) * 4));
-          }
+        shouldShow = true;
+        if (icon.userData.isRevBIcon) {
+          iconOpacity = 1; // Already visible from Rev B
+        } else {
+          // Stagger new icons
+          const newIconIndex = ALL_ICONS.findIndex((_, i) => !REV_B_ICONS.includes(i) && i <= index);
+          const totalNew = REV_C_ICON_COUNT - REV_B_ICON_COUNT;
+          const delay = 0.66 + (newIconIndex / totalNew) * 0.25;
+          iconOpacity = Math.min(1, Math.max(0, (phase - delay) * 4));
         }
       }
     }
 
     // Apply opacity to icon components
-    icon.userData.sphereMaterial.opacity = iconOpacity;
-    icon.userData.labelMaterial.opacity = iconOpacity * 0.9;
+    icon.userData.spriteMaterial.opacity = iconOpacity;
+    icon.userData.sphereMaterial.opacity = iconOpacity * 0.3;
     icon.userData.glowMaterial.opacity = iconOpacity * 0.5;
     icon.visible = iconOpacity > 0.01;
   });
@@ -792,7 +899,7 @@ function onMouseMove(event) {
 
   raycaster.setFromCamera(mouse, camera);
 
-  // Check for icon intersections
+  // Check for icon intersections (use backing spheres for hit detection)
   const iconMeshes = [];
   icons.children.forEach(icon => {
     if (icon.visible) {
