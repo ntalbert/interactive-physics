@@ -107,26 +107,43 @@ let fontsLoaded = false;
 // ============================================
 // FONT LOADING
 // ============================================
+let fontLoadAttempts = 0;
+const MAX_FONT_ATTEMPTS = 10;
+
 async function loadFonts() {
+  fontLoadAttempts++;
+
   try {
-    // Wait for Font Awesome fonts to load
+    // Wait for all fonts to be ready
     await document.fonts.ready;
 
-    // Check if FA fonts are available
-    const testBrands = document.fonts.check('900 48px "Font Awesome 6 Brands"');
+    // Check if FA fonts are available (Brands uses weight 400, Solid uses 900)
+    const testBrands = document.fonts.check('400 48px "Font Awesome 6 Brands"');
     const testSolid = document.fonts.check('900 48px "Font Awesome 6 Free"');
 
-    if (testBrands || testSolid) {
+    console.log(`Font check attempt ${fontLoadAttempts}: Brands=${testBrands}, Solid=${testSolid}`);
+
+    if (testBrands && testSolid) {
       fontsLoaded = true;
-      console.log('Font Awesome fonts loaded');
+      console.log('Font Awesome fonts loaded successfully');
       recreateIconTextures();
-    } else {
+    } else if (fontLoadAttempts < MAX_FONT_ATTEMPTS) {
       // Retry after a short delay
       setTimeout(loadFonts, 500);
+    } else {
+      // Force load after max attempts - fonts might be loaded but check failing
+      console.log('Max attempts reached, forcing font loaded state');
+      fontsLoaded = true;
+      recreateIconTextures();
     }
   } catch (e) {
-    console.log('Font loading check:', e);
-    setTimeout(loadFonts, 500);
+    console.log('Font loading error:', e);
+    if (fontLoadAttempts < MAX_FONT_ATTEMPTS) {
+      setTimeout(loadFonts, 500);
+    } else {
+      fontsLoaded = true;
+      recreateIconTextures();
+    }
   }
 }
 
@@ -462,7 +479,9 @@ function createFAIconTexture(iconData, size = 256) {
   // Draw Font Awesome icon
   if (fontsLoaded) {
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `900 ${size * 0.45}px "${iconData.fontFamily}"`;
+    // Brands font uses weight 400, Solid (Free) uses weight 900
+    const fontWeight = iconData.fontFamily.includes('Brands') ? '400' : '900';
+    ctx.font = `${fontWeight} ${size * 0.45}px "${iconData.fontFamily}"`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
