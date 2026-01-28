@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brand Gravity Ecosystem | Interactive WebGL</title>
+  <script type="module" crossorigin src="./assets/index-Bw6PGCwU.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-qpvIP5he.css">
+</head>
+<body>
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- Timeline Slider -->
+  <div class="timeline-container">
+    <div class="timeline-labels">
+      <span class="timeline-label">Month 6</span>
+      <span class="timeline-label">Month 24</span>
+      <span class="timeline-label">Month 48</span>
+    </div>
+    <input type="range" id="timeline-slider" min="0" max="1" step="0.01" value="0">
+    <div class="phase-markers">
+      <span class="phase-marker active">Rev A</span>
+      <span class="phase-marker">Rev B</span>
+      <span class="phase-marker">Rev C</span>
+    </div>
+  </div>
+
+  <!-- Phase Label -->
+  <div class="brand-label">
+    <span id="phase-label">BRAND GRAVITY ECOSYSTEM | Rev A</span>
+    <span id="month-display">MONTH: 6</span>
+  </div>
+
+  <!-- Instructions -->
+  <div class="instructions">
+    <p>Drag slider to see evolution | Click icons to animate | Drag to rotate view</p>
+  </div>
+
+</body>
+</html>
